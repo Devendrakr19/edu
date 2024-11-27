@@ -73,8 +73,7 @@ router.post("/login", async (req, res) => {
       user: {
         id: teacher._id,
         name: teacher.name,
-        // email: teacher.email,
-        // mobile: teacher.mobile,
+        role:"teacher"
       },
     });
   } catch (error) {
