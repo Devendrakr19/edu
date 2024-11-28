@@ -4,7 +4,7 @@ const Teacher = require("../models/teacherModel");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
-const JWT_SECRET = process.env.SECRET_KEY || "devBishiu";
+const JWT_SECRET = process.env.SECRET_KEY || "devBishu";
 
 router.post("/signup", async (req, res) => {
   try {
@@ -32,7 +32,10 @@ router.post("/signup", async (req, res) => {
     });
     await teacher.save();
 
-    res.status(201).json({ message: "Teacher registered successfully." });
+    res.status(201).json({
+      message: 'Teacher registered successfully',
+      teacherId: Teacher._id,
+    });
   } catch (error) {
     console.error("Signup error:", error);
     res.status(500).json({ message: "Internal server error." });

@@ -4,7 +4,7 @@ const Student = require("../models/studentModel");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
-const JWT_SECRET = process.env.SECRET_KEY || "devBishiu";
+const JWT_SECRET = process.env.SECRET_KEY || "devBishu";
 
 router.post("/signup", async (req, res) => {
   try {
