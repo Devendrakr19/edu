@@ -59,6 +59,8 @@ router.post(
         img = result.secure_url;
       }
 
+      let coursprice = price && price !== '0' ? price : 0;
+
       const course = new Course({
         name,
         category,
@@ -66,7 +68,7 @@ router.post(
         level,
         coursetitle,
         idpaid,
-        price,
+        price: coursprice,
         duration,
         img,
         comment,
@@ -103,12 +105,6 @@ router.get("/get-course", teachercourseMiddleware, async (req, res) => {
   try {
     const courses = await Course.find({ teacherId: req.teacherId });
 
-    if (!courses.length) {
-      return res
-        .status(404)
-        .json({ message: "No courses found for this teacher." });
-    }
-
     res.status(200).json({ courses });
   } catch (error) {
     res.status(500).json({ message: "Internal server error" });
@@ -120,9 +116,6 @@ router.get("/get-all-course", async (req, res) => {
   try {
     const courses = await Course.find();
 
-    if (!courses.length) {
-      return res.status(404).json({ message: "No course found" });
-    }
     res.status(200).json({ courses });
   } catch (error) {
     res.status(500).json({ message: "Internal server error" });
@@ -135,9 +128,6 @@ router.delete("/delete-course/:id", async (req, res) => {
 
     const course = await Course.findById(courseId);
 
-    if (!course) {
-      return res.status(404).json({ message: "Course not found" });
-    }
     if (course.img) {
       const publicId = course.img.split("/").slice(-2).join("/").split(".")[0];
 
