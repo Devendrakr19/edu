@@ -1,8 +1,7 @@
 const mongoose = require('mongoose');
 
-
-const teacherSchema = new mongoose.Schema({
-    name: {
+const signupSchema = new mongoose.Schema({
+    name:{
         type: String,
         required: true,
         trim: true,
@@ -16,16 +15,18 @@ const teacherSchema = new mongoose.Schema({
     },
     mobile: {
         type: String,
-        required: true,
         trim: true,
     },
     password: {
         type: String,
         required: true,
+    },
+    role:{
+        type: String,
+        enum: ["Student", "Teacher"],
     }
 })
 
-const Teacher = mongoose.model('Teacher', teacherSchema);
+const Signup = mongoose.model("Signup", signupSchema);
 
-module.exports = Teacher;
-
+module.exports = Signup;

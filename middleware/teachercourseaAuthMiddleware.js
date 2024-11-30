@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const Teacher = require('../models/teacherModel');
+const Signup = require("../models/authModal")
 
 const JWT_SECRET = process.env.SECRET_KEY || 'devBishu';
 
@@ -12,13 +12,16 @@ const authMiddleware = async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    const teacher = await Teacher.findById(decoded.id);
+    const { userId, role } = decoded;
 
-    if (!teacher) {
-      return res.status(401).json({ message: 'Teacher not found' });
+    const user = await Signup.findById(userId);
+
+    if (!user) {
+      return res.status(401).json({ message: 'user not found' });
     }
 
-    req.teacherId = decoded.id; // Attach teacherId to the request object
+    req.userId = userId;
+    req.role = role; 
     next();
   } catch (error) {
     console.error('Token verification failed:', error);

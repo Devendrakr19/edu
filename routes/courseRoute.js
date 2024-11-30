@@ -6,6 +6,7 @@ const path = require("path");
 const teachercourseMiddleware = require("../middleware/teachercourseaAuthMiddleware");
 const cloudinary = require("../server/cloudinary");
 const fs = require("fs");
+const Signup = require("../models/authModal");
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -50,7 +51,7 @@ router.post(
         duration,
         comment,
       } = req.body;
-
+ 
       let img = null;
       if (req.file) {
         const result = await cloudinary.uploader.upload(req.file.path, {
@@ -59,7 +60,7 @@ router.post(
         img = result.secure_url;
       }
 
-      let coursprice = price && price !== '0' ? price : 0;
+      let coursprice = price && price !== "0" ? price : 0;
 
       const course = new Course({
         name,
@@ -72,7 +73,7 @@ router.post(
         duration,
         img,
         comment,
-        teacherId: req.teacherId,
+        teacherId: req.userId,
       });
 
       await course.save();
@@ -81,19 +82,19 @@ router.post(
         fs.unlinkSync(req.file.path);
       }
 
-      res.status(201).json({
+      return res.status(201).json({
         message: "Course Create successfully.",
-        teacherId: course.teacherId,
-        name: course.name,
-        category: course.category,
-        subcategory: course.subcategory,
-        level: course.level,
-        coursetitle: course.coursetitle,
-        idpaid: course.idpaid,
-        price: course.price,
-        duration: course.duration,
-        img: course.img,
-        comment: course.comment,
+        // teacherId: course.teacherId,
+        // name: course.name,
+        // category: course.category,
+        // subcategory: course.subcategory,
+        // level: course.level,
+        // coursetitle: course.coursetitle,
+        // idpaid: course.idpaid,
+        // price: course.price,
+        // duration: course.duration,
+        // img: course.img,
+        // comment: course.comment,
       });
     } catch (error) {
       res.status(500).json({ message: "Internal server error" });
@@ -103,7 +104,7 @@ router.post(
 
 router.get("/get-course", teachercourseMiddleware, async (req, res) => {
   try {
-    const courses = await Course.find({ teacherId: req.teacherId });
+    const courses = await Course.find({ teacherId: req.userId });
 
     res.status(200).json({ courses });
   } catch (error) {
@@ -145,6 +146,45 @@ router.delete("/delete-course/:id", async (req, res) => {
     res.status(200).json({ message: "Course deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+
+router.get("/get-teachers", async (req, res) => {
+  try {
+    const teachers = await Signup.find({ role: "Teacher" }).select("-password");
+    // console.log("teahcers", teachers);
+ 
+    if (!teachers || teachers.length === 0) {
+      return res.status(404).json({ message: "No teachers found" });
+    }
+ 
+    return res.status(200).json({ teachers });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Internal server error",
+      error: error.message,
+      stack: error.stack,
+    });
+  }
+});
+
+router.get("/get-students", async (req, res) => {
+  try {
+    const students = await Signup.find({ role: "Student" }).select("-password");
+    // console.log("students", students);
+ 
+    if (!students || students.length === 0) {
+      return res.status(404).json({ message: "No students found" });
+    }
+ 
+    return res.status(200).json({ students });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Internal server error",
+      error: error.message,
+      stack: error.stack,
+    });
   }
 });
 

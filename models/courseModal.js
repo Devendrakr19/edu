@@ -40,7 +40,7 @@ const courseSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
-    teacherId: { type: Schema.Types.ObjectId, ref: "Teacher", required: true },
+    userId: { type: Schema.Types.ObjectId, required: true },
   },
   { timestamps: true }
 );
