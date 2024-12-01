@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 const courseRoute = require('./routes/courseRoute');
 const authRoute = require('./routes/authRoute');
 require('./utils/db')
@@ -18,9 +19,11 @@ app.use(
     })
   );
  
+app.use(cookieParser());
+
 app.use(express.json());
 
-app.use('/auth', authRoute)
+app.use('/user', authRoute)
 
 // Teacher course create
 app.use('/course', courseRoute);

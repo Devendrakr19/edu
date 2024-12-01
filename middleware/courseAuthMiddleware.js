@@ -22,6 +22,11 @@ const authMiddleware = async (req, res, next) => {
 
     req.userId = userId;
     req.role = role; 
+
+    if (req.role !== 'Teacher') {
+      return res.status(403).json({ message: 'Only teachers can access this resource.' });
+    }
+    
     next();
   } catch (error) {
     console.error('Token verification failed:', error);

@@ -3,7 +3,7 @@ const router = express.Router();
 const Course = require("../models/courseModal");
 const multer = require("multer");
 const path = require("path");
-const teachercourseMiddleware = require("../middleware/teachercourseaAuthMiddleware");
+const courseMiddleware = require("../middleware/courseAuthMiddleware");
 const cloudinary = require("../server/cloudinary");
 const fs = require("fs");
 const Signup = require("../models/authModal");
@@ -36,7 +36,7 @@ const upload = multer({
 
 router.post(
   "/create-course",
-  teachercourseMiddleware,
+  courseMiddleware,
   upload.single("file"),
   async (req, res) => {
     try {
@@ -73,7 +73,7 @@ router.post(
         duration,
         img,
         comment,
-        teacherId: req.userId,
+        userId: req.userId,
       });
 
       await course.save();
@@ -84,17 +84,17 @@ router.post(
 
       return res.status(201).json({
         message: "Course Create successfully.",
-        // teacherId: course.teacherId,
-        // name: course.name,
-        // category: course.category,
-        // subcategory: course.subcategory,
-        // level: course.level,
-        // coursetitle: course.coursetitle,
-        // idpaid: course.idpaid,
-        // price: course.price,
-        // duration: course.duration,
-        // img: course.img,
-        // comment: course.comment,
+        userId: course.userId,
+        name: course.name,
+        category: course.category,
+        subcategory: course.subcategory,
+        level: course.level,
+        coursetitle: course.coursetitle,
+        idpaid: course.idpaid,
+        price: course.price,
+        duration: course.duration,
+        img: course.img,
+        comment: course.comment,
       });
     } catch (error) {
       res.status(500).json({ message: "Internal server error" });
@@ -102,9 +102,9 @@ router.post(
   }
 );
 
-router.get("/get-course", teachercourseMiddleware, async (req, res) => {
+router.get("/get-course", courseMiddleware, async (req, res) => {
   try {
-    const courses = await Course.find({ teacherId: req.userId });
+    const courses = await Course.find({ userId: req.userId });
 
     res.status(200).json({ courses });
   } catch (error) {

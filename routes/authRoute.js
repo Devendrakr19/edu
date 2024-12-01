@@ -14,20 +14,19 @@ const createAdminIfNotExist = async () => {
   const adminExists = await Signup.findOne({ email: ADMIN_EMAIL });
 
   if (!adminExists) {
-
     const hashedPassword = await bcrypt.hash("Admin@123", 10);
-    
+
     const admin = new Signup({
       name: "Super Admin",
       email: ADMIN_EMAIL,
       password: hashedPassword,
     });
 
-    await admin.save(); 
+    await admin.save();
     console.log("Admin user created.");
   }
 };
-createAdminIfNotExist(); 
+createAdminIfNotExist();
 
 router.post("/signup", async (req, res) => {
   try {
@@ -62,7 +61,6 @@ router.post("/signup", async (req, res) => {
   }
 });
 
-
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -75,11 +73,11 @@ router.post("/login", async (req, res) => {
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(401).json({ message: "Invalid password." });
+      return res.status(401).json({ message: "Password not correct." });
     }
 
     if (user.email === ADMIN_EMAIL) {
-      user.role = "admin";  // Automatically assign super admin to the admin
+      user.role = "admin"; // Automatically assign super admin to the admin
     }
 
     const token = jwt.sign({ userId: user._id, role: user.role }, JWT_SECRET, {
@@ -106,7 +104,7 @@ router.post("/login", async (req, res) => {
       role: user.role,
     });
   } catch (error) {
-    res.status(500).json({ message: "Internal server error." });
+    res.status(500).json({ message: "Login Failed." });
   }
 });
 
@@ -133,7 +131,7 @@ router.post("/refresh-token", async (req, res) => {
     const newToken = jwt.sign(
       { userId: user._id, role: user.role },
       JWT_SECRET,
-      { expiresIn: "1h" }   
+      { expiresIn: "1h" }
     );
 
     const newRefreshToken = jwt.sign({ userId: user._id }, JWT_REFRESH_SECRET, {
@@ -146,12 +144,56 @@ router.post("/refresh-token", async (req, res) => {
       token: newToken,
       refreshToken: newRefreshToken,
     });
-
   } catch (error) {
     res.status(403).json({ message: "Invalid or expired refresh token." });
   }
 });
 
+router.get("/profile", async (req, res) => {
+  try {
+    // Extract the token from the Authorization header
+    const token = req.headers.authorization?.split(" ")[1];
+
+    if (!token) {
+      return res
+        .status(401)
+        .json({ message: "Authorization token is required." });
+    }
+
+    // Verify the token
+    const decoded = jwt.verify(token, JWT_SECRET);
+
+    // If token is valid, find the user based on the decoded user ID
+    const user = await Signup.findById(decoded.userId);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    // Respond with the user profile
+    res.status(200).json({
+      message: "User profile fetched successfully.",
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        mobile: user.mobile,
+      },
+    });
+  } catch (error) {
+    // Check if the error is related to token verification
+    if (error.name === "JsonWebTokenError") {
+      return res.status(401).json({ message: "Invalid access token." });
+    }
+    // Check if the error is related to token expiration
+    if (error.name === "TokenExpiredError") {
+      return res.status(401).json({ message: "Access token expired." });
+    }
+    // Handle other errors
+    res.status(500).json({ message: "Internal server error." });
+  }
+});
+
 
 module.exports = router;
-
