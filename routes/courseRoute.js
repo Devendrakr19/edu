@@ -104,24 +104,44 @@ router.post(
 
 router.get("/get-course", courseMiddleware, async (req, res) => {
   try {
-    const courses = await Course.find({ userId: req.userId });
+    const courses = await Course.find({ userId: req.userId }).sort({ createdAt: -1 });
 
     res.status(200).json({ courses });
   } catch (error) {
     res.status(500).json({ message: "Internal server error" });
   }
 });
-
-// Show all courses
+ 
 router.get("/get-all-course", async (req, res) => {
   try {
-    const courses = await Course.find();
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
 
-    res.status(200).json({ courses });
+    // Calculate the number of courses to skip based on the page and limit
+    const skip = (page - 1) * limit;
+
+    // Get the total count of courses to calculate total pages
+    const totalCourses = await Course.countDocuments();
+ 
+    const courses = await Course.find()
+      .skip(skip)
+      .limit(limit)
+      .sort({ createdAt: -1 });  // Sort by creation date, newest first
+ 
+    const totalPages = Math.ceil(totalCourses / limit);
+
+    // Return the courses and pagination info
+    res.status(200).json({
+      courses,
+      currentPage: page,
+      totalPages,
+      totalCourses,
+    });
   } catch (error) {
     res.status(500).json({ message: "Internal server error" });
   }
 });
+
 
 router.delete("/delete-course/:id", async (req, res) => {
   try {
