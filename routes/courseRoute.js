@@ -5,33 +5,28 @@ const multer = require("multer");
 const path = require("path");
 const courseMiddleware = require("../middleware/courseAuthMiddleware");
 const cloudinary = require("../server/cloudinary");
-const fs = require("fs");
 const Signup = require("../models/authModal");
+const { v2: cloudinaryUpload } = cloudinary;
 
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, "imgstored");
-  },
-  filename: function (req, file, cb) {
-    cb(null, Date.now() + path.extname(file.originalname));
-  },
-});
 
-const fileFilter = (req, file, cb) => {
-  if (
-    file.mimetype === "image/jpeg" ||
-    file.mimetype === "image/png" ||
-    file.mimetype === "image/gif"
-  ) {
-    cb(null, true);
-  } else {
-    cb(new Error("Invalid file type. Only JPEG, PNG, or GIF allowed."), false);
-  }
-};
+const storage = multer.memoryStorage();
 
 const upload = multer({
   storage: storage,
-  fileFilter: fileFilter,
+  fileFilter: (req, file, cb) => {
+    if (
+      file.mimetype === "image/jpeg" ||
+      file.mimetype === "image/png" ||
+      file.mimetype === "image/gif"
+    ) {
+      cb(null, true);
+    } else {
+      cb(
+        new Error("Invalid file type. Only JPEG, PNG, or GIF allowed."),
+        false
+      );
+    }
+  },
 });
 
 router.post(
@@ -51,12 +46,23 @@ router.post(
         duration,
         comment,
       } = req.body;
- 
+
       let img = null;
       if (req.file) {
-        const result = await cloudinary.uploader.upload(req.file.path, {
-          folder: "courses",
+        const result = await new Promise((resolve, reject) => {
+          const uploadStream = cloudinaryUpload.uploader.upload_stream(
+            { folder: "courses" },
+            (error, result) => {
+              if (error) {
+                reject(error); // Reject if there's an error
+              } else {
+                resolve(result); // Resolve the result when upload is successful
+              }
+            }
+          );
+          uploadStream.end(req.file.buffer);
         });
+
         img = result.secure_url;
       }
 
@@ -77,11 +83,7 @@ router.post(
       });
 
       await course.save();
-
-      if (req.file) {
-        fs.unlinkSync(req.file.path);
-      }
-
+ 
       return res.status(201).json({
         message: "Course Create successfully.",
         userId: course.userId,
@@ -104,14 +106,16 @@ router.post(
 
 router.get("/get-course", courseMiddleware, async (req, res) => {
   try {
-    const courses = await Course.find({ userId: req.userId }).sort({ createdAt: -1 });
+    const courses = await Course.find({ userId: req.userId }).sort({
+      createdAt: -1,
+    });
 
     res.status(200).json({ courses });
   } catch (error) {
     res.status(500).json({ message: "Internal server error" });
   }
 });
- 
+
 router.get("/get-all-course", async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -122,12 +126,12 @@ router.get("/get-all-course", async (req, res) => {
 
     // Get the total count of courses to calculate total pages
     const totalCourses = await Course.countDocuments();
- 
+
     const courses = await Course.find()
       .skip(skip)
       .limit(limit)
-      .sort({ createdAt: -1 });  // Sort by creation date, newest first
- 
+      .sort({ createdAt: -1 }); // Sort by creation date, newest first
+
     const totalPages = Math.ceil(totalCourses / limit);
 
     // Return the courses and pagination info
@@ -141,7 +145,6 @@ router.get("/get-all-course", async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 });
-
 
 router.delete("/delete-course/:id", async (req, res) => {
   try {
@@ -169,16 +172,15 @@ router.delete("/delete-course/:id", async (req, res) => {
   }
 });
 
-
 router.get("/get-teachers", async (req, res) => {
   try {
     const teachers = await Signup.find({ role: "Teacher" }).select("-password");
     // console.log("teahcers", teachers);
- 
+
     if (!teachers || teachers.length === 0) {
       return res.status(404).json({ message: "No teachers found" });
     }
- 
+
     return res.status(200).json({ teachers });
   } catch (error) {
     return res.status(500).json({
@@ -193,11 +195,11 @@ router.get("/get-students", async (req, res) => {
   try {
     const students = await Signup.find({ role: "Student" }).select("-password");
     // console.log("students", students);
- 
+
     if (!students || students.length === 0) {
       return res.status(404).json({ message: "No students found" });
     }
- 
+
     return res.status(200).json({ students });
   } catch (error) {
     return res.status(500).json({
