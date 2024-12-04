@@ -10,7 +10,7 @@ require('./utils/db')
 const app = express();
 
 // app.use(cors());
-const allowedOrigins = ['http://localhost:5173', 'https://knowledge-all-pmbf.onrender.com/'];
+const allowedOrigins = ['http://localhost:5173', 'https://knowledge-all-kn0s.onrender.com'];
 
 app.use(
     cors({
