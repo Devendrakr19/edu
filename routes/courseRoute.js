@@ -6,23 +6,21 @@ const path = require("path");
 const courseMiddleware = require("../middleware/courseAuthMiddleware");
 const cloudinary = require("../server/cloudinary");
 const Signup = require("../models/authModal");
-const { v2: cloudinaryUpload } = cloudinary;
-
 
 const storage = multer.memoryStorage();
 
 const upload = multer({
   storage: storage,
   fileFilter: (req, file, cb) => {
+    console.log('File uploaded:', file.mimetype);
     if (
       file.mimetype === "image/jpeg" ||
-      file.mimetype === "image/png" ||
-      file.mimetype === "image/gif"
+      file.mimetype === "image/png" 
     ) {
       cb(null, true);
     } else {
       cb(
-        new Error("Invalid file type. Only JPEG, PNG, or GIF allowed."),
+        new Error("Invalid file type. Only JPEG and PNG allowed."),
         false
       );
     }
@@ -50,7 +48,7 @@ router.post(
       let img = null;
       if (req.file) {
         const result = await new Promise((resolve, reject) => {
-          const uploadStream = cloudinaryUpload.uploader.upload_stream(
+          const uploadStream = cloudinary.uploader.upload_stream(
             { folder: "courses" },
             (error, result) => {
               if (error) {
@@ -83,7 +81,6 @@ router.post(
       });
 
       await course.save();
- 
       return res.status(201).json({
         message: "Course Create successfully.",
         userId: course.userId,

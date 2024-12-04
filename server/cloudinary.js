@@ -1,5 +1,3 @@
-// for storing img on cloud setver
-
 const cloudinary = require('cloudinary').v2;
 require('dotenv').config();
 
