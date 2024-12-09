@@ -40,8 +40,8 @@ passport.use(
     {
       clientID: GOOGLE_CLIENT_ID,
       clientSecret: GOOGLE_CLIENT_SECRET,
-      callbackURL: "http://localhost:5173/auth/google/callback", // For local dev
-      // callbackURL: "https://knowledge-all-kn0s.onrender.com/auth/google/callback", // For production
+      // callbackURL: "http://localhost:5173/auth/google/callback", // For local dev
+      callbackURL: "https://knowledge-all-kn0s.onrender.com/auth/google/callback", // For production
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
