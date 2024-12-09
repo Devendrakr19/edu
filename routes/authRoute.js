@@ -2,10 +2,15 @@ const express = require("express");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const Signup = require("../models/authModal");
+const passport = require("passport");
+const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const router = express.Router();
 
 const JWT_SECRET = process.env.SECRET_KEY || "devBishu";
 const JWT_REFRESH_SECRET = process.env.REFRESH_SECRET_KEY || "knowall";
+
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 
 const ADMIN_EMAIL = "admin123@gmail.com";
 
@@ -27,6 +32,89 @@ const createAdminIfNotExist = async () => {
   }
 };
 createAdminIfNotExist();
+
+
+//  Login with google 
+passport.use(
+  new GoogleStrategy(
+    {
+      clientID: GOOGLE_CLIENT_ID,
+      clientSecret: GOOGLE_CLIENT_SECRET,
+      callbackURL: "http://localhost:5173/auth/google/callback", // For local dev
+      // callbackURL: "https://knowledge-all-kn0s.onrender.com/auth/google/callback", // For production
+    },
+    async (accessToken, refreshToken, profile, done) => {
+      try {
+        // Check if the user exists in your database
+        let user = await Signup.findOne({ email: profile.emails[0].value });
+
+        if (!user) {
+          // If not, create a new user with the profile info
+          user = new Signup({
+            name: profile.displayName,
+            email: profile.emails[0].value,
+            password: null, // You might not need password for Google login
+            role: "Student", // You can decide the role based on the profile
+          });
+          await user.save();
+        }
+
+        // Proceed with authentication (pass user info to done)
+        done(null, user);
+      } catch (error) {
+        done(error, false);
+      }
+    }
+  )
+);
+
+passport.serializeUser((user, done) => done(null, user.id));
+passport.deserializeUser(async (id, done) => {
+  const user = await Signup.findById(id);
+  done(null, user);
+});
+
+// Initialize Passport
+router.use(passport.initialize());
+
+router.get("/auth/google", passport.authenticate("google", {
+  scope: ["profile", "email"],
+}));
+
+router.get("/auth/google/callback", 
+  passport.authenticate("google", { failureRedirect: "/" }),
+  async (req, res) => {
+    const user = req.user;
+    
+    // Create JWT token for the user after successful Google login
+    const token = jwt.sign({ userId: user._id, role: user.role }, JWT_SECRET, {
+      expiresIn: "2d",
+    });
+
+    const refreshToken = jwt.sign({ userId: user._id }, JWT_REFRESH_SECRET, {
+      expiresIn: "7d",
+    });
+
+    // Set the refresh token in a cookie
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production", // Ensure secure cookies in production
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      sameSite: "Strict",
+    });
+
+    // Send the response with the access token and user info
+    res.status(200).json({
+      message: "Google login successful.",
+      token,
+      refreshToken,
+      id: user._id,
+      name: user.name,
+      role: user.role,
+    });
+  }
+);
+
 
 router.post("/signup", async (req, res) => {
   try {
@@ -81,7 +169,7 @@ router.post("/login", async (req, res) => {
     }
 
     const token = jwt.sign({ userId: user._id, role: user.role }, JWT_SECRET, {
-      expiresIn: "1h",
+      expiresIn: "2d",
     });
 
     const refreshToken = jwt.sign({ userId: user._id }, JWT_REFRESH_SECRET, {
@@ -131,7 +219,7 @@ router.post("/refresh-token", async (req, res) => {
     const newToken = jwt.sign(
       { userId: user._id, role: user.role },
       JWT_SECRET,
-      { expiresIn: "1h" }
+      { expiresIn: "2d" }
     );
 
     const newRefreshToken = jwt.sign({ userId: user._id }, JWT_REFRESH_SECRET, {
