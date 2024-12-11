@@ -6,6 +6,7 @@ const passport = require("passport");
 const cookieParser = require("cookie-parser");
 const courseRoute = require("./routes/courseRoute");
 const authRoute = require("./routes/authRoute");
+const PasswordResetRoute = require("./routes/passwordResetRoute");
 require("./utils/db");
 
 const app = express();
@@ -43,6 +44,7 @@ app.use(cookieParser());
 app.use(express.json());
 
 app.use("/user", authRoute);
+app.use("/change-password", PasswordResetRoute);
 
 // Teacher course create
 app.use("/course", courseRoute);
