@@ -9,12 +9,12 @@ const OTP_EXP_TIME = 10 * 60 * 1000;
 const otpStore = {};
 
 const transporter = nodemailer.createTransport({
-  host: "smtp.elasticemail.com", // Elastic Email SMTP server
+  host: "smtp-relay.brevo.com", // Elastic Email SMTP server
   port: 587, // Use port 587 for TLS (recommended)
   secure: false, // Use TLS (don't set it to 'true' for port 587)
   auth: {
-    user: "devendraku18956@gmail.com",
-    pass: process.env.ELASTIC_EMAIL_KEY,
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
   },
 });
 
@@ -35,7 +35,7 @@ router.post("/request-otp", async (req, res) => {
   };
 
   const mailOptions = {
-    from: "devendraku18956@gmail.com", // Sender address
+    from: process.env.SMTP_SENDER, // Sender address
     to: email, // List of recipients
     subject: "Password Reset OTP",
     html: `<p>Your OTP for password reset is: <strong>${otp}</strong></p>`,
@@ -44,8 +44,10 @@ router.post("/request-otp", async (req, res) => {
   try {
     await transporter.sendMail(mailOptions);
     console.log("OTP email sent successfully");
+    return res.status(200).json({ message: "OTP sent successfully." });
   } catch (error) {
     console.error("Error sending OTP email:", error);
+    return res.status(500).json({ message: "Error sending OTP email.", error: error.message });
   }
 });
 
